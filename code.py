@@ -6,6 +6,10 @@ import time
 import audioio
 import board
 import pulseio
+import array
+import math
+import audiobusio
+import board
 
 # buttonA = DigitalInOut(board.BUTTON_A)
 # buttonA.direction = Direction.INPUT
@@ -99,13 +103,41 @@ def servoProgram():
     crickit.continuous_servo_1.throttle = 0   # Stop
     time.sleep(2)
 
-
-while True:
+def IRReader():
     ss = crickit.seesaw
     IR1 = crickit.SIGNAL1
-    #  lightUpLEDs()
     ss.pin_mode(IR1, ss.INPUT)
 
+    while True:
+        print((ss.analog_read(IR1),))
+        time.sleep(0.025)
+
+        infraredValue = ss.analog_read(IR1)
+        ratio = infraredValue / 1025
+        ledValue = int(ratio * 255)
+        cpx.pixels[0] = (ledValue, 0, 125)
+        cpx.pixels[1] = (ledValue, 50, 150)
+
+def normalized_rms(values):
+    minbuf = int(mean(values))
+    return math.sqrt(sum(float((sample - minbuf) * (sample - minbuf)) for sample in values) / len(values))
+def mean(values):
+    return (sum(values) / len(values))
+
+def microphoneRead():
+    b = array.array("H")
+    for i in range(200):
+        b.append(0)
+    with audiobusio.PDMIn(board.MICROPHONE_CLOCK, board.MICROPHONE_DATA, bit_depth=16) as mic:
+        mic.record(b, len(b))
+
+    time.sleep(2)
+    print(normalized_rms(b))
+
+while True:
+    # Start Program
+
+    microphoneRead()
     if cpx.button_a:
         if button_a_on is False:
             button_a_on = True
@@ -114,19 +146,12 @@ while True:
         else:
             button_a_on = False
 
-    elif cpx.button_b:
-        cpx.pixels[5:10] = [(0, 255, 0)] * 5
+elif cpx.button_b:
+    cpx.pixels[5:10] = [(0, 255, 0)] * 5
     else:
         cpx.pixels.fill((0, 0, 0))
 
-        # while True:
-        # print((ss.analog_read(IR1),))
-        # time.sleep(0.025)
 
-        # infraredValue = ss.analog_read(IR1)
-        # ratio = infraredValue / 1025
-        # ledValue = int(ratio * 255)
-        # cpx.pixels[0] = (ledValue, 0, 125)
-        # cpx.pixels[1] = (ledValue, 50, 150)
 
-    pass
+pass
+
